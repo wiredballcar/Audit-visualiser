@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koramangala Footpath Audit</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#f5f0e8;--paper2:#ede8dc;--paper3:#e5dfd0;
+  --ink:#1a1410;--ink-light:#4a3f35;--ink-muted:#8a7d70;
+  --green:#2d6a2d;--amber:#b8620a;--red:#9b2020;
+  --border:#c8bfb0;--border-dark:#a09080;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--paper);color:var(--ink);font-family:'Lora',Georgia,serif;overflow:hidden;display:flex;flex-direction:column}
+
+/* HEADER */
+header{background:var(--ink);color:var(--paper);display:flex;align-items:stretch;justify-content:space-between;flex-shrink:0;z-index:1000;border-bottom:3px solid var(--amber)}
+.h-brand{display:flex;align-items:center;gap:14px;padding:10px 20px;border-right:1px solid rgba(255,255,255,0.1)}
+.h-stamp{width:40px;height:40px;border:1.5px solid rgba(245,240,232,0.35);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.h-eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(245,240,232,0.45);margin-bottom:3px}
+.h-title{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1}
+.h-sub{font-family:'Lora',serif;font-style:italic;font-size:10px;color:rgba(245,240,232,0.5);margin-top:2px}
+.h-stats{display:flex;align-items:stretch}
+.hstat{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;border-right:1px solid rgba(255,255,255,0.08);gap:1px}
+.hstat-v{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;line-height:1}
+.hstat-l{font-family:'DM Mono',monospace;font-size:7px;text-transform:uppercase;letter-spacing:.14em;color:rgba(245,240,232,0.4)}
+.h-legend{display:flex;align-items:center;gap:12px;padding:0 12px}
+.hl{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:rgba(245,240,232,0.55)}
+.hl-line{width:18px;height:3px;border-radius:1px}
+.h-actions{display:flex;align-items:center;gap:6px;padding:0 12px;border-left:1px solid rgba(255,255,255,0.1)}
+.hbtn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--paper);font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;padding:6px 11px;cursor:pointer;border-radius:2px;transition:background .2s;white-space:nowrap}
+.hbtn:hover,.hbtn.active{background:var(--amber);border-color:var(--amber)}
+.hbtn.draw-active{background:#1a4a8a;border-color:#1a4a8a;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+/* DRAW BANNER */
+.draw-banner{background:#1a4a8a;color:#fff;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;padding:6px 16px;text-align:center;display:none;flex-shrink:0}
+.draw-banner.show{display:block}
+
+/* BODY */
+.body{flex:1;display:flex;overflow:hidden;min-height:0}
+#map{flex:1;background:var(--paper2) !important;cursor:default}
+#map.drawing-mode{cursor:crosshair !important}
+.leaflet-container{background:#e8e0d0 !important}
+.leaflet-popup-content-wrapper{background:var(--paper) !important;border:1.5px solid var(--ink) !important;border-radius:1px !important;box-shadow:4px 4px 0 rgba(26,20,16,0.12) !important;padding:0 !important}
+.leaflet-popup-tip{background:var(--paper) !important}
+.leaflet-popup-content{margin:0 !important}
+.leaflet-control-zoom{border:1.5px solid var(--ink) !important;border-radius:2px !important}
+.leaflet-control-zoom a{background:var(--paper) !important;color:var(--ink) !important;border-bottom-color:var(--border) !important;font-family:'Playfair Display',serif !important}
+.leaflet-control-attribution{background:rgba(245,240,232,0.9) !important;font-family:'DM Mono',monospace !important;font-size:8px !important;color:var(--ink-muted) !important}
+
+/* PANEL */
+.panel{width:340px;flex-shrink:0;background:var(--paper);border-left:1.5px solid var(--ink);display:flex;flex-direction:column;overflow:hidden;box-shadow:-6px 0 24px rgba(26,20,16,0.07)}
+.panel-head{padding:14px 16px 12px;border-bottom:1px solid var(--border);background:var(--paper2);flex-shrink:0}
+.pe{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.18em;color:var(--ink-muted);margin-bottom:4px}
+.pt{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);line-height:1.2}
+.ps{font-family:'Lora',serif;font-style:italic;font-size:11px;color:var(--ink-muted);margin-top:2px}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--paper2)}
+.ptab{flex:1;padding:8px 4px;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-muted);cursor:pointer;text-align:center;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;background:none;border-top:none;border-left:none;border-right:none}
+.ptab:hover{color:var(--ink)}.ptab.active{color:var(--amber);border-bottom-color:var(--amber)}
+.panel-body{flex:1;overflow-y:auto;padding:14px}
+.panel-body::-webkit-scrollbar{width:3px}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border-dark)}
+
+/* PROGRESS */
+.prog-wrap{background:var(--paper2);border:1px solid var(--border);padding:12px;margin-bottom:14px}
+.prog-top{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-muted);margin-bottom:5px;align-items:baseline}
+.prog-pct{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--green)}
+.prog-bar{height:3px;background:var(--border);overflow:hidden}
+.prog-fill{height:100%;background:var(--green);transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+
+/* STREET LIST */
+.sitem{display:flex;align-items:flex-start;padding:8px 8px;gap:8px;border-bottom:1px solid var(--paper3);cursor:pointer;transition:background .15s}
+.sitem:hover{background:var(--paper2)}
+.sitem-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.sitem-name{font-family:'Lora',serif;font-size:12px;font-weight:500;color:var(--ink);line-height:1.3;flex:1}
+.sitem-meta{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink-muted);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+.sitem-r{text-align:right;flex-shrink:0}
+.sitem-status{font-family:'DM Mono',monospace;font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.08em}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;margin-bottom:12px;font-weight:500}
+.badge-g{background:rgba(45,106,45,.1);color:var(--green);border:1px solid rgba(45,106,45,.25)}
+.badge-a{background:rgba(184,98,10,.1);color:var(--amber);border:1px solid rgba(184,98,10,.25)}
+.badge-m{background:rgba(138,125,112,.1);color:var(--ink-muted);border:1px solid var(--border)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.metric{border:1px solid var(--border);padding:9px 11px;background:var(--paper2)}
+.mv{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--ink);line-height:1}
+.ml{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-muted);margin-top:3px}
+
+/* DIVIDER */
+.div-row{display:flex;align-items:center;gap:8px;margin:12px 0 8px}
+.div-lbl{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-muted);white-space:nowrap;flex-shrink:0}
+.div-line{flex:1;height:1px;background:var(--border)}
+
+/* PHOTO GRID */
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
+.photo-card{aspect-ratio:4/3;background:var(--paper2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+.photo-card:hover{border-color:var(--ink);box-shadow:2px 2px 0 rgba(26,20,16,.12)}
+.photo-card .pe{font-size:22px}
+.photo-card img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.photo-cap{font-family:'Lora',serif;font-style:italic;font-size:9px;color:var(--ink-muted);text-align:center;padding:0 4px;line-height:1.3;position:relative;z-index:1}
+.photo-tag{position:absolute;top:4px;right:4px;font-family:'DM Mono',monospace;font-size:7px;background:var(--ink);color:var(--paper);padding:1px 4px;z-index:2}
+.photo-del-btn{position:absolute;top:4px;left:4px;background:rgba(155,32,32,.85);color:#fff;border:none;cursor:pointer;font-size:9px;padding:2px 5px;font-family:'DM Mono',monospace;z-index:3;display:none}
+.photo-card:hover .photo-del-btn{display:block}
+
+/* COMPLAINTS */
+.complaint{border:1px solid var(--border);padding:8px 8px 8px 12px;margin-bottom:5px;background:var(--paper);position:relative;transition:border-color .2s}
+.complaint::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.complaint.open::before{background:var(--red)}.complaint.prog::before{background:var(--amber)}.complaint.done::before{background:var(--green)}
+.c-head{display:flex;justify-content:space-between;margin-bottom:3px;align-items:center}
+.c-id{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink-muted)}
+.c-st{font-family:'DM Mono',monospace;font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.07em}
+.c-st.open{color:var(--red)}.c-st.prog{color:var(--amber)}.c-st.done{color:var(--green)}
+.c-title{font-family:'Lora',serif;font-size:12px;color:var(--ink);line-height:1.4;margin-bottom:2px}
+.c-meta{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink-muted)}
+.c-link{font-family:'DM Mono',monospace;font-size:8px;color:var(--amber);text-decoration:none;margin-top:3px;display:inline-block}
+.c-link:hover{text-decoration:underline}
+.c-actions{display:flex;gap:5px;margin-top:5px;align-items:center}
+
+/* TRACKER BTN */
+.tracker-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px;background:var(--ink);color:var(--paper);font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;text-decoration:none;margin-top:10px;transition:background .2s}
+.tracker-btn:hover{background:var(--ink-light)}
+
+/* BACK */
+.back-btn{background:none;border:none;cursor:pointer;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);display:flex;align-items:center;gap:5px;margin-bottom:12px;padding:0;transition:color .2s}
+.back-btn:hover{color:var(--ink)}
+.empty{text-align:center;padding:18px 8px;font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+
+/* POPUP */
+.mpop{padding:11px 13px}
+.mpop-name{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.mpop-st{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;font-weight:500;margin-bottom:3px}
+.mpop-hint{font-family:'Lora',serif;font-style:italic;font-size:10px;color:var(--ink-muted)}
+
+/* FORMS */
+.form-section{margin-bottom:16px}
+.fsec-title{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.13em;color:var(--amber);margin-bottom:9px;padding-bottom:5px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.field{margin-bottom:8px}
+.field label{display:block;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-muted);margin-bottom:3px}
+.field input,.field select,.field textarea{width:100%;padding:7px 9px;background:var(--paper);border:1px solid var(--border-dark);font-family:'Lora',serif;font-size:12px;color:var(--ink);outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber)}
+.field textarea{resize:vertical;min-height:50px;line-height:1.5}
+.field select{cursor:pointer}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* UPLOAD */
+.upload-zone{border:1.5px dashed var(--border-dark);padding:12px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--paper);margin-bottom:7px;display:block}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--amber);background:rgba(184,98,10,0.04)}
+.upload-zone input{display:none}
+.upload-icon{font-size:18px;margin-bottom:3px}
+.upload-text{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted)}
+.preview-strip{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.preview-thumb{width:52px;height:38px;object-fit:cover;border:1px solid var(--border);cursor:pointer}
+
+/* BUTTONS */
+.btn{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.09em;padding:6px 11px;cursor:pointer;border:none;transition:background .2s;display:inline-flex;align-items:center;gap:5px}
+.btn-ink{background:var(--ink);color:var(--paper)}.btn-ink:hover{background:var(--ink-light)}
+.btn-amber{background:var(--amber);color:var(--paper)}.btn-amber:hover{background:#9a520a}
+.btn-ghost{background:var(--paper2);color:var(--ink-muted);border:1px solid var(--border)}.btn-ghost:hover{background:var(--paper3);color:var(--ink)}
+.btn-red{background:rgba(155,32,32,.1);color:var(--red);border:1px solid rgba(155,32,32,.2)}.btn-red:hover{background:rgba(155,32,32,.18)}
+.btn-blue{background:#1a4a8a;color:var(--paper)}.btn-blue:hover{background:#153a70}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+
+/* DRIVE LINKS */
+.drive-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);margin-bottom:5px;background:var(--paper);transition:border-color .2s}
+.drive-item:hover{border-color:var(--amber)}
+.drive-item-icon{font-size:16px;flex-shrink:0}
+.drive-item-info{flex:1;min-width:0}
+.drive-item-name{font-family:'Lora',serif;font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drive-item-meta{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em}
+.drive-item-open{font-family:'DM Mono',monospace;font-size:8px;color:var(--amber);text-decoration:none;white-space:nowrap}.drive-item-open:hover{text-decoration:underline}
+.drive-del{background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:12px;padding:0 2px;transition:color .2s}.drive-del:hover{color:var(--red)}
+
+/* EDIT ROAD SECTION */
+.edit-road-section{background:rgba(184,98,10,0.04);border:1px dashed var(--amber);padding:12px;margin-bottom:14px}
+.edit-road-title{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);margin-bottom:10px}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;padding:9px 18px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(26,20,16,.92);z-index:9998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.lightbox.open{display:flex}
+.lightbox img{max-width:92vw;max-height:82vh;object-fit:contain;border:2px solid var(--paper2)}
+.lightbox-close{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--paper);cursor:pointer;background:none;border:1px solid rgba(245,240,232,.3);padding:5px 14px}
+
+/* CONFIRM MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,20,16,.7);z-index:9997;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--paper);border:1.5px solid var(--ink);padding:24px;max-width:320px;width:90%;box-shadow:6px 6px 0 rgba(26,20,16,.15)}
+.modal-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:8px}
+.modal-body{font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--ink-muted);margin-bottom:16px;line-height:1.6}
+.modal-btns{display:flex;gap:8px}
+</style>
+</head>
+<body>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <img id="lbImg" src="" alt=""/>
+  <button class="lightbox-close" onclick="closeLightbox()">✕ Close</button>
+</div>
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Confirm</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-btns">
+      <button class="btn btn-red" id="modalConfirm">Confirm</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<header>
+  <div class="h-brand">
+    <div class="h-stamp">🦶</div>
+    <div>
+      <div class="h-eyebrow">Bengaluru Civic Audit · 2024</div>
+      <div class="h-title">Koramangala Footpath Survey</div>
+      <div class="h-sub">3rd Block to 7th Block — Field Documentation</div>
+    </div>
+  </div>
+  <div class="h-stats">
+    <div class="hstat"><div class="hstat-v" id="hA" style="color:#7eba7e">6</div><div class="hstat-l">Audited</div></div>
+    <div class="hstat"><div class="hstat-v" id="hP" style="color:#e89a60">3</div><div class="hstat-l">Partial</div></div>
+    <div class="hstat"><div class="hstat-v" id="hC" style="color:#e8b060">16</div><div class="hstat-l">Complaints</div></div>
+    <div class="hstat"><div class="hstat-v" id="hPct">52%</div><div class="hstat-l">Coverage</div></div>
+  </div>
+  <div class="h-legend">
+    <div class="hl"><div class="hl-line" style="background:#2d6a2d"></div>Audited</div>
+    <div class="hl"><div class="hl-line" style="background:#b8620a"></div>Partial</div>
+    <div class="hl"><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="#b0a090" stroke-width="2" stroke-dasharray="4 3"/></svg>Pending</div>
+    <div class="hl"><span style="font-size:11px">👣</span>Walked</div>
+  </div>
+  <div class="h-actions">
+    <button class="hbtn" id="drawBtn" onclick="toggleDraw()">✏ Draw Road</button>
+    <button class="hbtn" id="manageBtn" onclick="toggleManage()">⊕ Add Data</button>
+  </div>
+</header>
+
+<div class="draw-banner" id="drawBanner">
+  ✏ Drawing Mode — Click on the map to place points along the road. Double-click to finish. Press Esc to cancel.
+</div>
+
+<div class="body">
+  <div style="flex:1;min-width:0;position:relative">
+    <div id="map" style="width:100%;height:100%"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="pe" id="pe">Field Report</div>
+      <div class="pt" id="pt">Street Index</div>
+      <div class="ps" id="ps">Koramangala 3rd – 7th Block</div>
+    </div>
+    <div class="panel-tabs" id="panelTabs" style="display:none">
+      <button class="ptab active" id="tab-view" onclick="switchTab('view')">View</button>
+      <button class="ptab" id="tab-edit" onclick="switchTab('edit')">Edit</button>
+      <button class="ptab" id="tab-photos" onclick="switchTab('photos')">Photos</button>
+      <button class="ptab" id="tab-complaints" onclick="switchTab('complaints')">Complaints</button>
+      <button class="ptab" id="tab-links" onclick="switchTab('links')">Drive</button>
+    </div>
+    <div class="panel-body" id="pb"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const STADIA_API_KEY = '9bc66456-b7ec-4cad-8848-5b5210d8a2d6';
+
+// ─────────────────────────────────────────────────────
+// SEED DATA
+// ─────────────────────────────────────────────────────
+const SEED = [
+  {id:"r60ft",name:"60 Feet Road",status:"audited",block:"3rd – 7th Block",length:"2.1 km",auditedOn:"15 Nov 2024",width:"1.2 – 1.8 m",condition:"Fair",
+   coords:[[12.9279,77.6103],[12.9278,77.6145],[12.9278,77.6190],[12.9279,77.6230],[12.9280,77.6275],[12.9282,77.6315],[12.9285,77.6355],[12.9288,77.6400],[12.9290,77.6435]],
+   complaints:[
+     {id:"BMP-2024-1142",title:"Vendor stall encroachment near 5th block",status:"prog",date:"18 Nov 2024",dept:"BBMP Ward Office",link:""},
+     {id:"BMP-2024-1198",title:"Missing footpath tiles near junction",status:"open",date:"22 Nov 2024",dept:"BBMP Roads",link:""},
+     {id:"BMP-2024-1223",title:"Drainage overflow onto footpath",status:"open",date:"25 Nov 2024",dept:"BBMP Drainage",link:""},
+     {id:"BMP-2024-0989",title:"Tree roots breaking pavement",status:"done",date:"10 Nov 2024",dept:"BBMP Horticulture",link:""},
+   ],
+   photos:[
+     {id:"ph1",type:"emoji",e:"🚧",cap:"Vendor cart blocking walkway",tag:"Encroachment",src:null,driveUrl:""},
+     {id:"ph2",type:"emoji",e:"🪨",cap:"Missing tiles at junction",tag:"Damage",src:null,driveUrl:""},
+     {id:"ph3",type:"emoji",e:"💧",cap:"Drainage overflow point",tag:"Drainage",src:null,driveUrl:""},
+     {id:"ph4",type:"emoji",e:"🌳",cap:"Root damage on path",tag:"Obstruction",src:null,driveUrl:""},
+     {id:"ph5",type:"emoji",e:"✅",cap:"Good stretch near 3rd block",tag:"Good Condition",src:null,driveUrl:""},
+     {id:"ph6",type:"emoji",e:"🏗️",cap:"Unmarked utility dig",tag:"Hazard",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"r80ft",name:"80 Feet Road",status:"audited",block:"1st – 7th Block",length:"1.8 km",auditedOn:"20 Nov 2024",width:"1.5 – 2.0 m",condition:"Good",
+   coords:[[12.9450,77.6245],[12.9420,77.6243],[12.9390,77.6242],[12.9360,77.6240],[12.9330,77.6238],[12.9300,77.6237],[12.9270,77.6236],[12.9240,77.6235],[12.9210,77.6234]],
+   complaints:[
+     {id:"BMP-2024-1301",title:"Footpath blocked by parked two-wheelers",status:"open",date:"01 Dec 2024",dept:"Traffic Police",link:""},
+     {id:"BMP-2024-1289",title:"Broken accessibility ramp at crossing",status:"prog",date:"28 Nov 2024",dept:"BBMP Roads",link:""},
+   ],
+   photos:[
+     {id:"ph7",type:"emoji",e:"🏍️",cap:"Bikes parked on footpath",tag:"Obstruction",src:null,driveUrl:""},
+     {id:"ph8",type:"emoji",e:"♿",cap:"Broken ramp at crossing",tag:"Accessibility",src:null,driveUrl:""},
+     {id:"ph9",type:"emoji",e:"✅",cap:"Well-maintained long stretch",tag:"Good Condition",src:null,driveUrl:""},
+     {id:"ph10",type:"emoji",e:"💡",cap:"Street light blocking path",tag:"Infrastructure",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"rsarj",name:"Sarjapur Road",status:"partial",block:"7th Block Boundary",length:"~1.2 km audited",auditedOn:"10 Dec 2024",width:"0.8 – 1.2 m",condition:"Poor",
+   coords:[[12.9150,77.6450],[12.9190,77.6400],[12.9230,77.6360],[12.9270,77.6320],[12.9310,77.6285],[12.9340,77.6265],[12.9370,77.6255]],
+   complaints:[
+     {id:"BMP-2024-1512",title:"Footpath fully encroached by shop",status:"open",date:"12 Dec 2024",dept:"BBMP Ward Office",link:""},
+     {id:"BMP-2024-1521",title:"Open manhole on pedestrian path",status:"prog",date:"13 Dec 2024",dept:"BWSSB",link:""},
+     {id:"BMP-2024-1530",title:"No footpath for 300m stretch",status:"open",date:"15 Dec 2024",dept:"BBMP Roads",link:""},
+   ],
+   photos:[
+     {id:"ph11",type:"emoji",e:"🏪",cap:"Shop spreading onto footpath",tag:"Encroachment",src:null,driveUrl:""},
+     {id:"ph12",type:"emoji",e:"🕳️",cap:"Open manhole — hazard!",tag:"Hazard",src:null,driveUrl:""},
+     {id:"ph13",type:"emoji",e:"🚗",cap:"Cars parked on footpath",tag:"Obstruction",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"r100ft",name:"Outer Ring Road (100 Ft)",status:"partial",block:"5th – 7th Block North",length:"1.4 km (0.8 km done)",auditedOn:"01 Dec 2024",width:"1.0 – 1.5 m",condition:"Poor",
+   coords:[[12.9420,77.6095],[12.9420,77.6140],[12.9418,77.6185],[12.9415,77.6230],[12.9412,77.6275],[12.9410,77.6320],[12.9408,77.6365]],
+   complaints:[
+     {id:"BMP-2024-1350",title:"No footpath for 400m stretch",status:"open",date:"05 Dec 2024",dept:"BBMP Roads",link:""},
+     {id:"BMP-2024-1367",title:"Construction debris on footpath",status:"open",date:"07 Dec 2024",dept:"BBMP Buildings",link:""},
+     {id:"BMP-2024-1341",title:"Signboard obstructing walking space",status:"prog",date:"03 Dec 2024",dept:"BBMP Advertisement",link:""},
+   ],
+   photos:[
+     {id:"ph14",type:"emoji",e:"🚫",cap:"No footpath — missing entirely",tag:"Missing Infra",src:null,driveUrl:""},
+     {id:"ph15",type:"emoji",e:"🏚️",cap:"Construction debris dump",tag:"Encroachment",src:null,driveUrl:""},
+     {id:"ph16",type:"emoji",e:"🪧",cap:"Signboard blocking path",tag:"Obstruction",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"rjnc",name:"Jyoti Nivas College Road",status:"audited",block:"5th – 7th Block",length:"0.5 km",auditedOn:"12 Dec 2024",width:"1.0 – 1.5 m",condition:"Good",
+   coords:[[12.9350,77.6305],[12.9362,77.6295],[12.9375,77.6288],[12.9390,77.6280],[12.9405,77.6270]],
+   complaints:[{id:"BMP-2024-1567",title:"Footpath narrows at college gate",status:"done",date:"14 Dec 2024",dept:"BBMP Roads",link:""}],
+   photos:[
+     {id:"ph17",type:"emoji",e:"🎓",cap:"Narrows at college gate",tag:"Accessibility",src:null,driveUrl:""},
+     {id:"ph18",type:"emoji",e:"✅",cap:"Recently resurfaced section",tag:"Good Condition",src:null,driveUrl:""},
+     {id:"ph19",type:"emoji",e:"🌿",cap:"Overgrown hedge on walkway",tag:"Obstruction",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"r3main",name:"3rd Main Road, 3rd Block",status:"audited",block:"3rd Block",length:"0.6 km",auditedOn:"28 Nov 2024",width:"0.8 – 1.2 m",condition:"Fair",
+   coords:[[12.9350,77.6125],[12.9365,77.6127],[12.9380,77.6129],[12.9395,77.6131],[12.9410,77.6133]],
+   complaints:[{id:"BMP-2024-1415",title:"Footpath ends abruptly near school",status:"open",date:"02 Dec 2024",dept:"BBMP Roads",link:""}],
+   photos:[
+     {id:"ph20",type:"emoji",e:"🏫",cap:"Footpath ends at school gate",tag:"Missing Infra",src:null,driveUrl:""},
+     {id:"ph21",type:"emoji",e:"✅",cap:"Paved section in good shape",tag:"Good Condition",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"r7cross",name:"7th Cross Road",status:"audited",block:"4th – 5th Block",length:"0.9 km",auditedOn:"05 Dec 2024",width:"0.9 – 1.3 m",condition:"Fair",
+   coords:[[12.9310,77.6160],[12.9312,77.6195],[12.9313,77.6225],[12.9314,77.6255]],
+   complaints:[
+     {id:"BMP-2024-1451",title:"Footpath used as parking lot",status:"open",date:"07 Dec 2024",dept:"Traffic Police",link:""},
+     {id:"BMP-2024-1489",title:"Uneven surface causing falls",status:"prog",date:"10 Dec 2024",dept:"BBMP Roads",link:""},
+   ],
+   photos:[
+     {id:"ph22",type:"emoji",e:"🚗",cap:"Cars parked on footpath",tag:"Encroachment",src:null,driveUrl:""},
+     {id:"ph23",type:"emoji",e:"⚠️",cap:"Badly uneven surface",tag:"Damage",src:null,driveUrl:""},
+     {id:"ph24",type:"emoji",e:"✅",cap:"Recently repaired section",tag:"Good Condition",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"r12main",name:"12th Main Road",status:"partial",block:"5th Block",length:"0.8 km (0.4 km done)",auditedOn:"10 Dec 2024",width:"0.7 – 1.0 m",condition:"Poor",
+   coords:[[12.9280,77.6255],[12.9295,77.6257],[12.9310,77.6259],[12.9325,77.6261],[12.9340,77.6262]],
+   complaints:[
+     {id:"BMP-2024-1510",title:"Broken tiles near school entrance",status:"open",date:"11 Dec 2024",dept:"BBMP Roads",link:""},
+     {id:"BMP-2024-1521",title:"Open manhole — hazard",status:"prog",date:"13 Dec 2024",dept:"BWSSB",link:""},
+   ],
+   photos:[
+     {id:"ph25",type:"emoji",e:"🏫",cap:"Broken near school gate",tag:"Damage",src:null,driveUrl:""},
+     {id:"ph26",type:"emoji",e:"🕳️",cap:"Open manhole hazard",tag:"Hazard",src:null,driveUrl:""},
+   ],driveLinks:[]},
+  {id:"r5main",name:"5th Main Road",status:"pending",block:"4th Block",length:"0.7 km",auditedOn:null,width:null,condition:null,coords:[[12.9340,77.6170],[12.9355,77.6172],[12.9370,77.6174],[12.9385,77.6176]],complaints:[],photos:[],driveLinks:[]},
+  {id:"r8cross",name:"8th Cross Road",status:"pending",block:"3rd – 4th Block",length:"0.8 km",auditedOn:null,width:null,condition:null,coords:[[12.9295,77.6130],[12.9297,77.6168],[12.9298,77.6200],[12.9299,77.6232]],complaints:[],photos:[],driveLinks:[]},
+  {id:"r11cross",name:"11th Cross Road",status:"pending",block:"6th – 7th Block",length:"0.9 km",auditedOn:null,width:null,condition:null,coords:[[12.9245,77.6175],[12.9247,77.6215],[12.9248,77.6255],[12.9249,77.6295]],complaints:[],photos:[],driveLinks:[]},
+];
+
+// ─────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────
+function loadState(){try{const s=localStorage.getItem('kfp_v4');return s?JSON.parse(s):null}catch(e){return null}}
+function saveState(){try{localStorage.setItem('kfp_v4',JSON.stringify(ROADS))}catch(e){}}
+
+let ROADS = loadState() || JSON.parse(JSON.stringify(SEED));
+// migrate
+ROADS.forEach(r=>{
+  if(!r.driveLinks)r.driveLinks=[];
+  r.photos.forEach(p=>{if(!p.driveUrl)p.driveUrl='';if(!p.id)p.id='ph_'+Math.random().toString(36).slice(2)});
+  r.complaints.forEach(c=>{if(!c.link)c.link=''});
+});
+
+let currentRoadId=null, currentTab='view', manageMode=false, drawMode=false;
+let drawCoords=[], drawLine=null, drawMarkers=[];
+let pendingUploads=[], _inlinePending=[];
+
+// ─────────────────────────────────────────────────────
+// MAP
+// ─────────────────────────────────────────────────────
+const map = L.map('map',{center:[12.9310,77.6270],zoom:15});
+const apiParam = STADIA_API_KEY?`?api_key=${STADIA_API_KEY}`:'';
+L.tileLayer(`https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png${apiParam}`,
+  {attribution:'© <a href="https://stadiamaps.com/">Stadia</a> © <a href="https://stamen.com">Stamen</a> © <a href="https://openstreetmap.org">OSM</a>',maxZoom:20}).addTo(map);
+
+const SC={audited:{stroke:"#2d6a2d",glow:"rgba(45,106,45,0.16)",w:6},partial:{stroke:"#b8620a",glow:"rgba(184,98,10,0.13)",w:4},pending:{stroke:"#a09080",glow:null,w:3,dash:"9 6"}};
+const layers={};
+
+function redrawRoad(r){
+  // remove old layers for this road
+  if(layers[r.id]){
+    layers[r.id].forEach(l=>map.removeLayer(l));
+    delete layers[r.id];
+  }
+  const cfg=SC[r.status];
+  const all=[];
+  if(cfg.glow){const g=L.polyline(r.coords,{color:cfg.stroke,weight:18,opacity:0.14,interactive:false,lineCap:"round"}).addTo(map);all.push(g)}
+  const opts={color:cfg.stroke,weight:cfg.w,opacity:r.status==="pending"?0.4:0.9,lineCap:"round",lineJoin:"round"};
+  if(cfg.dash)opts.dashArray=cfg.dash;
+  const line=L.polyline(r.coords,opts).addTo(map);
+  all.push(line);
+  if(r.status==="audited"){
+    const lft=L.polyline(r.coords,{color:cfg.stroke,weight:1.5,opacity:0.35,dashArray:"4 6",interactive:false,lineCap:"round",offset:9}).addTo(map);
+    const rft=L.polyline(r.coords,{color:cfg.stroke,weight:1.5,opacity:0.35,dashArray:"4 6",interactive:false,lineCap:"round",offset:-9}).addTo(map);
+    const dot=L.polyline(r.coords,{color:cfg.stroke,weight:1,opacity:0.18,dashArray:"1 9",interactive:false,lineCap:"round"}).addTo(map);
+    all.push(lft,rft,dot);
+    placeFootsteps(r.coords).forEach(m=>all.push(m));
+  }
+  line.on('mouseover',e=>{line.setStyle({weight:cfg.w+3,opacity:1});L.popup({closeButton:false,offset:[0,-4]}).setLatLng(e.latlng).setContent(mkPopup(r)).openOn(map)});
+  line.on('mouseout',()=>{line.setStyle({weight:cfg.w,opacity:r.status==="pending"?0.4:0.9});map.closePopup()});
+  line.on('click',()=>{if(!drawMode)openRoad(r)});
+  layers[r.id]=all;
+}
+
+ROADS.forEach(redrawRoad);
+
+function placeFootsteps(coords){
+  const ms=[];
+  const step=Math.max(1,Math.floor(coords.length/Math.min(7,coords.length)));
+  for(let i=1;i<coords.length-1;i+=step){
+    const rot=(Math.random()*24-12).toFixed(0);
+    const icon=L.divIcon({html:`<div style="font-size:11px;opacity:0.68;transform:rotate(${rot}deg);filter:sepia(0.4) saturate(0.9);line-height:1">👣</div>`,className:'',iconSize:[14,14],iconAnchor:[7,7]});
+    ms.push(L.marker(coords[i],{icon,interactive:false,zIndexOffset:-100}).addTo(map));
+  }
+  return ms;
+}
+
+function mkPopup(r){
+  const lbl={audited:"✓ Fully Audited",partial:"◑ Partial Audit",pending:"○ Not Yet Audited"}[r.status];
+  const col={audited:"#2d6a2d",partial:"#b8620a",pending:"#8a7d70"}[r.status];
+  const hint=r.status!=='pending'?`${r.length} · ${r.complaints.length} complaint${r.complaints.length!==1?'s':''} · Click to inspect`:'Click to view details';
+  return `<div class="mpop"><div class="mpop-name">${r.name}</div><div class="mpop-st" style="color:${col}">${lbl}</div><div class="mpop-hint">${hint}</div></div>`;
+}
+
+// ─────────────────────────────────────────────────────
+// DRAW MODE
+// ─────────────────────────────────────────────────────
+function toggleDraw(){
+  drawMode=!drawMode;
+  const btn=document.getElementById('drawBtn');
+  const banner=document.getElementById('drawBanner');
+  const mapEl=document.getElementById('map');
+  btn.classList.toggle('draw-active',drawMode);
+  btn.textContent=drawMode?'✕ Cancel Draw':'✏ Draw Road';
+  banner.classList.toggle('show',drawMode);
+  mapEl.classList.toggle('drawing-mode',drawMode);
+  if(!drawMode){clearDrawing();return;}
+  // cancel manage mode
+  if(manageMode){manageMode=false;document.getElementById('manageBtn').classList.remove('active');document.getElementById('manageBtn').textContent='⊕ Add Data';}
+  // show draw instructions in panel
+  showDrawPanel();
+}
+
+function showDrawPanel(){
+  document.getElementById('panelTabs').style.display='none';
+  document.getElementById('pe').textContent='Draw Tool';
+  document.getElementById('pt').textContent='New Road';
+  document.getElementById('ps').textContent='Click map to place points';
+  document.getElementById('pb').innerHTML=`
+    <div style="font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--ink-muted);margin-bottom:14px;line-height:1.7">
+      Click on the map to place points along the road. Double-click the last point to finish drawing.
+    </div>
+    <div id="draw-point-count" style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-muted);margin-bottom:14px">Points placed: 0</div>
+    <div class="field"><label>Road Name *</label><input id="draw-name" placeholder="e.g. 9th Cross Road"/></div>
+    <div class="field-row">
+      <div class="field"><label>Block</label><input id="draw-block" placeholder="5th Block"/></div>
+      <div class="field"><label>Length</label><input id="draw-len" placeholder="0.5 km"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="draw-status">
+          <option value="pending">○ Pending</option>
+          <option value="partial">◑ Partial</option>
+          <option value="audited">✓ Audited</option>
+        </select>
+      </div>
+      <div class="field"><label>Condition</label>
+        <select id="draw-cond">
+          <option value="">— n/a</option>
+          <option>Good</option><option>Fair</option><option>Poor</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Path Width</label><input id="draw-width" placeholder="1.0 – 1.5 m"/></div>
+      <div class="field"><label>Audit Date</label><input id="draw-date" placeholder="15 Jan 2025"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-blue" onclick="finishDraw()">✓ Finish & Save</button>
+      <button class="btn btn-ghost" onclick="toggleDraw()">✕ Cancel</button>
+    </div>
+    <div style="margin-top:12px;font-family:'DM Mono',monospace;font-size:8px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.08em;line-height:1.7">
+      Tip: Zoom in on the map before drawing for better accuracy.<br/>Undo last point: click the last marker.
+    </div>
+  `;
+}
+
+// Map click handler for drawing
+map.on('click',function(e){
+  if(!drawMode)return;
+  drawCoords.push([e.latlng.lat,e.latlng.lng]);
+  // place marker
+  const idx=drawCoords.length-1;
+  const marker=L.circleMarker(e.latlng,{radius:5,color:'#1a4a8a',fillColor:'#4a7abf',fillOpacity:1,weight:2}).addTo(map);
+  marker.on('click',function(ev){
+    L.DomEvent.stopPropagation(ev);
+    if(drawCoords.length>1 && idx===drawCoords.length-1){
+      // undo last point
+      drawCoords.pop();
+      map.removeLayer(marker);
+      if(drawLine){map.removeLayer(drawLine);drawLine=null}
+      if(drawCoords.length>1){drawLine=L.polyline(drawCoords,{color:'#1a4a8a',weight:3,dashArray:'6 4'}).addTo(map)}
+      const el=document.getElementById('draw-point-count');
+      if(el)el.textContent=`Points placed: ${drawCoords.length}`;
+    }
+  });
+  drawMarkers.push(marker);
+  // update preview line
+  if(drawLine){map.removeLayer(drawLine);drawLine=null}
+  if(drawCoords.length>1){drawLine=L.polyline(drawCoords,{color:'#1a4a8a',weight:3,dashArray:'6 4'}).addTo(map)}
+  const el=document.getElementById('draw-point-count');
+  if(el)el.textContent=`Points placed: ${drawCoords.length}`;
+});
+
+map.on('dblclick',function(e){
+  if(!drawMode)return;
+  L.DomEvent.stopPropagation(e);
+  finishDraw();
+});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&drawMode){toggleDraw();}
+});
+
+function clearDrawing(){
+  drawCoords=[];
+  if(drawLine){map.removeLayer(drawLine);drawLine=null}
+  drawMarkers.forEach(m=>map.removeLayer(m));
+  drawMarkers=[];
+}
+
+function finishDraw(){
+  if(drawCoords.length<2){toast('Place at least 2 points on the map');return}
+  const name=document.getElementById('draw-name')?.value.trim();
+  if(!name){toast('Please enter a road name');return}
+  const r={
+    id:'r_'+Date.now(),
+    name,
+    block:document.getElementById('draw-block')?.value||'Koramangala',
+    length:document.getElementById('draw-len')?.value||'—',
+    auditedOn:document.getElementById('draw-date')?.value||null,
+    width:document.getElementById('draw-width')?.value||null,
+    condition:document.getElementById('draw-cond')?.value||null,
+    status:document.getElementById('draw-status')?.value||'pending',
+    coords:[...drawCoords],
+    complaints:[],photos:[],driveLinks:[]
+  };
+  ROADS.push(r);
+  clearDrawing();
+  drawMode=false;
+  document.getElementById('drawBtn').classList.remove('draw-active');
+  document.getElementById('drawBtn').textContent='✏ Draw Road';
+  document.getElementById('drawBanner').classList.remove('show');
+  document.getElementById('map').classList.remove('drawing-mode');
+  redrawRoad(r);
+  saveState();updateStats();
+  toast(`"${r.name}" drawn and saved`);
+  openRoad(r);
+}
+
+// ─────────────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────────────
+function updateStats(){
+  const a=ROADS.filter(r=>r.status==='audited').length;
+  const p=ROADS.filter(r=>r.status==='partial').length;
+  const c=ROADS.reduce((s,r)=>s+r.complaints.length,0);
+  const pct=Math.round(((a+p*0.5)/ROADS.length)*100);
+  document.getElementById('hA').textContent=a;
+  document.getElementById('hP').textContent=p;
+  document.getElementById('hC').textContent=c;
+  document.getElementById('hPct').textContent=pct+'%';
+}
+
+// ─────────────────────────────────────────────────────
+// MANAGE PANEL
+// ─────────────────────────────────────────────────────
+function toggleManage(){
+  manageMode=!manageMode;
+  const btn=document.getElementById('manageBtn');
+  btn.classList.toggle('active',manageMode);
+  btn.textContent=manageMode?'✕ Close':'⊕ Add Data';
+  if(drawMode){toggleDraw();}
+  if(manageMode){
+    currentRoadId=null;
+    document.getElementById('panelTabs').style.display='none';
+    document.getElementById('pe').textContent='Data Management';
+    document.getElementById('pt').textContent='Add / Upload';
+    document.getElementById('ps').textContent='Roads · Photos · Complaints · Drive Links';
+    renderManage();
+  } else {renderList();}
+}
+
+function renderManage(){
+  let h='';
+  // Add Road
+  h+=`<div class="form-section">
+    <div class="fsec-title">🗺 Add Road (Quick)</div>
+    <p style="font-family:'Lora',serif;font-style:italic;font-size:11px;color:var(--ink-muted);margin-bottom:10px">Or use the <strong style="font-style:normal">✏ Draw Road</strong> button to trace the road directly on the map.</p>
+    <div class="field"><label>Road Name *</label><input id="mn-name" placeholder="e.g. 9th Cross Road"/></div>
+    <div class="field-row">
+      <div class="field"><label>Block</label><input id="mn-block" placeholder="5th Block"/></div>
+      <div class="field"><label>Length</label><input id="mn-len" placeholder="0.5 km"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="mn-status"><option value="pending">○ Pending</option><option value="partial">◑ Partial</option><option value="audited">✓ Audited</option></select>
+      </div>
+      <div class="field"><label>Condition</label>
+        <select id="mn-cond"><option value="">— n/a</option><option>Good</option><option>Fair</option><option>Poor</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Width</label><input id="mn-width" placeholder="1.0 – 1.5 m"/></div>
+      <div class="field"><label>Audit Date</label><input id="mn-date" placeholder="15 Jan 2025"/></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-ink" onclick="addRoad()">＋ Add Road</button></div>
+  </div>`;
+
+  // Upload Photos
+  h+=`<div class="form-section">
+    <div class="fsec-title">📷 Upload Photos</div>
+    <div class="field"><label>Road</label>
+      <select id="mn-photo-road">${ROADS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('')}</select>
+    </div>
+    <label class="upload-zone" id="photoUploadZone">
+      <input type="file" id="photoFileInput" multiple accept="image/*" onchange="handlePhotoFiles(event)"/>
+      <div class="upload-icon">📎</div>
+      <div class="upload-text">Tap or drag photos from device</div>
+    </label>
+    <div class="preview-strip" id="photoPreviewStrip"></div>
+    <div class="field"><label>Caption</label><input id="mn-photo-cap" placeholder="Describe what you see..."/></div>
+    <div class="field"><label>Tag</label>
+      <select id="mn-photo-tag"><option>Encroachment</option><option>Damage</option><option>Obstruction</option><option>Missing Infra</option><option>Hazard</option><option>Drainage</option><option>Accessibility</option><option>Good Condition</option><option>Infrastructure</option></select>
+    </div>
+    <div class="btn-row" id="photoSaveBtnRow" style="display:none">
+      <button class="btn btn-amber" onclick="savePhotos()">＋ Save Photos</button>
+      <button class="btn btn-ghost" onclick="clearPhotoUploads()">Clear</button>
+    </div>
+  </div>`;
+
+  // Log Complaint
+  h+=`<div class="form-section">
+    <div class="fsec-title">🗂 Log Complaint</div>
+    <div class="field"><label>Road</label>
+      <select id="mn-c-road">${ROADS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Issue *</label><textarea id="mn-c-title" placeholder="Describe the footpath issue..."></textarea></div>
+    <div class="field-row">
+      <div class="field"><label>Department</label>
+        <select id="mn-c-dept"><option>BBMP Roads</option><option>BBMP Ward Office</option><option>BBMP Drainage</option><option>BBMP Buildings</option><option>BBMP Horticulture</option><option>BBMP Advertisement</option><option>Traffic Police</option><option>BWSSB</option><option>Other</option></select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="mn-c-status"><option value="open">Open</option><option value="prog">In Progress</option><option value="done">Resolved</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Complaint Link (optional)</label><input id="mn-c-link" placeholder="https://bbmpsahaaya.karnataka.gov.in/..."/></div>
+    <div class="btn-row"><button class="btn btn-ink" onclick="addComplaintGlobal()">＋ Log Complaint</button></div>
+  </div>`;
+
+  // Drive Link
+  h+=`<div class="form-section">
+    <div class="fsec-title">🔗 Add Drive / Form Link</div>
+    <div class="field"><label>Road</label>
+      <select id="mn-dl-road">${ROADS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Name *</label><input id="mn-dl-name" placeholder="e.g. Audit Form Responses, Photo Album..."/></div>
+    <div class="field"><label>URL *</label><input id="mn-dl-url" placeholder="https://drive.google.com/..."/></div>
+    <div class="field"><label>Type</label>
+      <select id="mn-dl-type">
+        <option value="form">📋 Google Form Response</option>
+        <option value="photos">🖼 Photo Album / Folder</option>
+        <option value="sheet">📊 Google Sheet</option>
+        <option value="doc">📄 Google Doc</option>
+        <option value="file">📁 File / Other</option>
+      </select>
+    </div>
+    <div class="btn-row"><button class="btn btn-ink" onclick="addDriveLinkGlobal()">＋ Add Link</button></div>
+  </div>`;
+
+  // Reset
+  h+=`<div class="form-section">
+    <div class="fsec-title" style="color:var(--red)">⚠ Reset Data</div>
+    <p style="font-family:'Lora',serif;font-style:italic;font-size:11px;color:var(--ink-muted);margin-bottom:8px">Restores original seed data. Cannot be undone.</p>
+    <div class="btn-row"><button class="btn btn-red" onclick="resetData()">Reset to Default</button></div>
+  </div>`;
+
+  document.getElementById('pb').innerHTML=h;
+
+  document.getElementById('photoUploadZone').addEventListener('click',e=>{
+    if(e.target.tagName!=='INPUT')document.getElementById('photoFileInput').click();
+  });
+  document.getElementById('photoUploadZone').addEventListener('dragover',e=>{e.preventDefault();e.currentTarget.classList.add('drag')});
+  document.getElementById('photoUploadZone').addEventListener('dragleave',e=>e.currentTarget.classList.remove('drag'));
+  document.getElementById('photoUploadZone').addEventListener('drop',e=>{
+    e.preventDefault();e.currentTarget.classList.remove('drag');
+    handlePhotoFiles({target:{files:e.dataTransfer.files}});
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// ADD ROAD (quick, without drawing)
+// ─────────────────────────────────────────────────────
+function addRoad(){
+  const name=document.getElementById('mn-name').value.trim();
+  if(!name){toast('Please enter a road name');return}
+  const c=map.getCenter();
+  const r={
+    id:'r_'+Date.now(),name,
+    block:document.getElementById('mn-block').value||'Koramangala',
+    length:document.getElementById('mn-len').value||'—',
+    auditedOn:document.getElementById('mn-date').value||null,
+    width:document.getElementById('mn-width').value||null,
+    condition:document.getElementById('mn-cond').value||null,
+    status:document.getElementById('mn-status').value,
+    coords:[[c.lat-0.002,c.lng-0.004],[c.lat,c.lng],[c.lat+0.002,c.lng+0.004]],
+    complaints:[],photos:[],driveLinks:[]
+  };
+  ROADS.push(r);
+  redrawRoad(r);
+  saveState();updateStats();
+  ['mn-name','mn-block','mn-len','mn-date','mn-width'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  toast(`"${r.name}" added — use ✏ Draw Road to trace it on the map`);
+}
+
+// ─────────────────────────────────────────────────────
+// PHOTOS
+// ─────────────────────────────────────────────────────
+function handlePhotoFiles(e){
+  Array.from(e.target.files||[]).forEach(f=>{
+    if(!f.type.startsWith('image/'))return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      pendingUploads.push({file:f,dataUrl:ev.target.result});
+      const strip=document.getElementById('photoPreviewStrip');
+      if(strip)strip.innerHTML=pendingUploads.map(p=>`<img class="preview-thumb" src="${p.dataUrl}" onclick="openLightbox('${p.dataUrl}')"/>`).join('');
+      const row=document.getElementById('photoSaveBtnRow');
+      if(row)row.style.display='flex';
+    };
+    reader.readAsDataURL(f);
+  });
+}
+function savePhotos(){
+  if(!pendingUploads.length){toast('No photos selected');return}
+  const roadId=document.getElementById('mn-photo-road').value;
+  const cap=document.getElementById('mn-photo-cap').value||'Field photo';
+  const tag=document.getElementById('mn-photo-tag').value;
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  pendingUploads.forEach(p=>{r.photos.push({id:'ph_'+Date.now()+'_'+Math.random().toString(36).slice(2),type:'image',e:'📷',cap,tag,src:p.dataUrl,driveUrl:''})});
+  const count=pendingUploads.length;pendingUploads=[];
+  saveState();updateStats();clearPhotoUploads();
+  toast(`${count} photo${count>1?'s':''} added to ${r.name}`);
+}
+function clearPhotoUploads(){
+  pendingUploads=[];
+  const s=document.getElementById('photoPreviewStrip');if(s)s.innerHTML='';
+  const b=document.getElementById('photoSaveBtnRow');if(b)b.style.display='none';
+  const i=document.getElementById('photoFileInput');if(i)i.value='';
+}
+
+// ─────────────────────────────────────────────────────
+// COMPLAINTS (global)
+// ─────────────────────────────────────────────────────
+function addComplaintGlobal(){
+  const title=document.getElementById('mn-c-title').value.trim();
+  if(!title){toast('Please describe the issue');return}
+  const roadId=document.getElementById('mn-c-road').value;
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  const today=new Date(),months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  r.complaints.push({
+    id:'BMP-'+today.getFullYear()+'-'+Math.floor(Math.random()*9000+1000),
+    title,status:document.getElementById('mn-c-status').value,
+    date:`${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`,
+    dept:document.getElementById('mn-c-dept').value,
+    link:document.getElementById('mn-c-link').value.trim()
+  });
+  saveState();updateStats();
+  document.getElementById('mn-c-title').value='';
+  document.getElementById('mn-c-link').value='';
+  toast(`Complaint logged for ${r.name}`);
+}
+
+// ─────────────────────────────────────────────────────
+// DRIVE LINKS (global)
+// ─────────────────────────────────────────────────────
+function addDriveLinkGlobal(){
+  const name=document.getElementById('mn-dl-name').value.trim();
+  const url=document.getElementById('mn-dl-url').value.trim();
+  if(!name||!url){toast('Please enter name and URL');return}
+  if(!url.startsWith('http')){toast('URL must start with http');return}
+  const r=ROADS.find(x=>x.id===document.getElementById('mn-dl-road').value);if(!r)return;
+  r.driveLinks.push({id:'dl_'+Date.now(),name,url,type:document.getElementById('mn-dl-type').value});
+  saveState();
+  document.getElementById('mn-dl-name').value='';document.getElementById('mn-dl-url').value='';
+  toast(`Link added to ${r.name}`);
+}
+
+function resetData(){
+  confirm2('Reset All Data','This will remove all custom roads, photos, complaints and links and restore defaults. Cannot be undone.',()=>{
+    localStorage.removeItem('kfp_v4');location.reload();
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// OPEN ROAD
+// ─────────────────────────────────────────────────────
+function openRoad(r){
+  if(drawMode)return;
+  manageMode=false;
+  document.getElementById('manageBtn').classList.remove('active');
+  document.getElementById('manageBtn').textContent='⊕ Add Data';
+  currentRoadId=r.id;currentTab='view';
+  document.getElementById('panelTabs').style.display='flex';
+  document.getElementById('pe').textContent=r.block;
+  document.getElementById('pt').textContent=r.name;
+  document.getElementById('ps').textContent=r.status==='pending'?'Not yet audited':`Audited ${r.auditedOn}`;
+  activateTab('view');renderView(r);
+  const ly=layers[r.id];
+  if(ly)map.fitBounds(L.polyline(r.coords).getBounds(),{padding:[70,90],maxZoom:17});
+}
+
+function switchTab(tab){
+  if(!currentRoadId)return;
+  currentTab=tab;activateTab(tab);
+  const r=ROADS.find(x=>x.id===currentRoadId);if(!r)return;
+  if(tab==='view')renderView(r);
+  else if(tab==='edit')renderEditTab(r);
+  else if(tab==='photos')renderPhotosTab(r);
+  else if(tab==='complaints')renderComplaintsTab(r);
+  else if(tab==='links')renderLinksTab(r);
+}
+
+function activateTab(tab){
+  ['view','edit','photos','complaints','links'].forEach(t=>{
+    document.getElementById('tab-'+t)?.classList.toggle('active',t===tab);
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// TAB: VIEW
+// ─────────────────────────────────────────────────────
+function renderView(r){
+  const bcls={audited:'badge-g',partial:'badge-a',pending:'badge-m'}[r.status];
+  const blbl={audited:'✓ Fully Audited',partial:'◑ Partial Audit',pending:'○ Not Yet Audited'}[r.status];
+  const condCol={Good:'#2d6a2d',Fair:'#b8620a',Poor:'#9b2020'}[r.condition]||'#8a7d70';
+
+  let h=`<button class="back-btn" onclick="renderList()">← Back to index</button>
+  <div class="badge ${bcls}">${blbl}</div>
+  <div class="metrics">
+    <div class="metric"><div class="mv">${r.length||'—'}</div><div class="ml">Length</div></div>
+    <div class="metric"><div class="mv">${r.complaints.length}</div><div class="ml">Complaints</div></div>`;
+  if(r.width)h+=`<div class="metric"><div class="mv" style="font-size:12px">${r.width}</div><div class="ml">Path Width</div></div>`;
+  if(r.condition)h+=`<div class="metric"><div class="mv" style="color:${condCol};font-size:15px">${r.condition}</div><div class="ml">Condition</div></div>`;
+  if(r.auditedOn)h+=`<div class="metric"><div class="mv" style="font-size:12px">${r.auditedOn}</div><div class="ml">Audited On</div></div>`;
+  h+=`</div>`;
+
+  if(r.photos.length){
+    h+=`<div class="div-row"><div class="div-lbl">Photos (${r.photos.length})</div><div class="div-line"></div></div><div class="photo-grid">`;
+    r.photos.slice(0,4).forEach(p=>{
+      if(p.src)h+=`<div class="photo-card" onclick="openLightbox('${p.src}')"><img src="${p.src}"/><div class="photo-tag">${p.tag}</div></div>`;
+      else h+=`<div class="photo-card"><div class="pe">${p.e}</div><div class="photo-cap">${p.cap}</div><div class="photo-tag">${p.tag}</div></div>`;
+    });
+    if(r.photos.length>4)h+=`<div class="photo-card" onclick="switchTab('photos')" style="background:var(--paper3)"><div class="pe" style="font-size:16px">+${r.photos.length-4}</div><div class="photo-cap">more</div></div>`;
+    h+=`</div>`;
+  }else{h+=`<div class="empty">No photos — <span style="color:var(--amber);cursor:pointer" onclick="switchTab('photos')">add in Photos tab</span></div>`}
+
+  if(r.complaints.length){
+    h+=`<div class="div-row"><div class="div-lbl">Complaints (${r.complaints.length})</div><div class="div-line"></div></div>`;
+    r.complaints.slice(0,3).forEach(c=>{
+      const slbl={open:"Open",prog:"In Progress",done:"Resolved"}[c.status];
+      h+=`<div class="complaint ${c.status}">
+        <div class="c-head"><span class="c-id">${c.id}</span><span class="c-st ${c.status}">${slbl}</span></div>
+        <div class="c-title">${c.title}</div>
+        <div class="c-meta">${c.date} · ${c.dept}</div>
+        ${c.link?`<a class="c-link" href="${c.link}" target="_blank">↗ View complaint</a>`:''}
+      </div>`;
+    });
+    if(r.complaints.length>3)h+=`<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--amber);cursor:pointer;text-align:right;margin-top:4px" onclick="switchTab('complaints')">+${r.complaints.length-3} more →</div>`;
+    h+=`<a class="tracker-btn" href="https://bbmpsahaaya.karnataka.gov.in/" target="_blank">View on BBMP Complaint Tracker →</a>`;
+  }else{h+=`<div class="empty">No complaints — <span style="color:var(--amber);cursor:pointer" onclick="switchTab('complaints')">log one</span></div>`}
+
+  if(r.driveLinks&&r.driveLinks.length){
+    const icons={form:'📋',photos:'🖼',sheet:'📊',doc:'📄',file:'📁'};
+    h+=`<div class="div-row"><div class="div-lbl">Drive Links (${r.driveLinks.length})</div><div class="div-line"></div></div>`;
+    r.driveLinks.forEach(dl=>{
+      h+=`<div class="drive-item"><div class="drive-item-icon">${icons[dl.type]||'📁'}</div>
+        <div class="drive-item-info"><div class="drive-item-name">${dl.name}</div><div class="drive-item-meta">${dl.type}</div></div>
+        <a class="drive-item-open" href="${dl.url}" target="_blank">↗ Open</a>
+      </div>`;
+    });
+  }
+
+  document.getElementById('pb').innerHTML=h;
+}
+
+// ─────────────────────────────────────────────────────
+// TAB: EDIT (road details + delete road)
+// ─────────────────────────────────────────────────────
+function renderEditTab(r){
+  let h=`<div class="edit-road-section">
+    <div class="edit-road-title">✏ Edit Road Details</div>
+    <div class="field"><label>Road Name</label><input id="er-name" value="${r.name}"/></div>
+    <div class="field-row">
+      <div class="field"><label>Block</label><input id="er-block" value="${r.block||''}"/></div>
+      <div class="field"><label>Length</label><input id="er-len" value="${r.length||''}"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="er-status">
+          <option value="pending" ${r.status==='pending'?'selected':''}>○ Pending</option>
+          <option value="partial" ${r.status==='partial'?'selected':''}>◑ Partial</option>
+          <option value="audited" ${r.status==='audited'?'selected':''}>✓ Audited</option>
+        </select>
+      </div>
+      <div class="field"><label>Condition</label>
+        <select id="er-cond">
+          <option value="" ${!r.condition?'selected':''}>— n/a</option>
+          <option value="Good" ${r.condition==='Good'?'selected':''}>Good</option>
+          <option value="Fair" ${r.condition==='Fair'?'selected':''}>Fair</option>
+          <option value="Poor" ${r.condition==='Poor'?'selected':''}>Poor</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Path Width</label><input id="er-width" value="${r.width||''}"/></div>
+      <div class="field"><label>Audit Date</label><input id="er-date" value="${r.auditedOn||''}"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-amber" onclick="saveRoadEdit('${r.id}')">✓ Save Changes</button>
+    </div>
+  </div>
+
+  <div class="div-row"><div class="div-lbl">Danger Zone</div><div class="div-line"></div></div>
+  <p style="font-family:'Lora',serif;font-style:italic;font-size:11px;color:var(--ink-muted);margin-bottom:10px;line-height:1.6">
+    Deleting a road removes it from the map along with all its photos, complaints, and Drive links permanently.
+  </p>
+  <div class="btn-row">
+    <button class="btn btn-red" onclick="deleteRoad('${r.id}')">✕ Delete This Road</button>
+  </div>`;
+
+  document.getElementById('pb').innerHTML=h;
+}
+
+function saveRoadEdit(id){
+  const r=ROADS.find(x=>x.id===id);if(!r)return;
+  r.name=document.getElementById('er-name').value;
+  r.block=document.getElementById('er-block').value;
+  r.length=document.getElementById('er-len').value;
+  r.status=document.getElementById('er-status').value;
+  r.condition=document.getElementById('er-cond').value||null;
+  r.width=document.getElementById('er-width').value||null;
+  r.auditedOn=document.getElementById('er-date').value||null;
+  saveState();updateStats();
+  redrawRoad(r);
+  document.getElementById('pt').textContent=r.name;
+  document.getElementById('ps').textContent=r.status==='pending'?'Not yet audited':`Audited ${r.auditedOn}`;
+  toast('Changes saved');
+  renderEditTab(r);
+}
+
+function deleteRoad(id){
+  const r=ROADS.find(x=>x.id===id);if(!r)return;
+  confirm2(`Delete "${r.name}"?`,`This will permanently remove the road and all its data (${r.photos.length} photos, ${r.complaints.length} complaints, ${r.driveLinks.length} links).`,()=>{
+    if(layers[r.id]){layers[r.id].forEach(l=>map.removeLayer(l));delete layers[r.id]}
+    ROADS=ROADS.filter(x=>x.id!==id);
+    saveState();updateStats();
+    toast(`"${r.name}" deleted`);
+    renderList();
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// TAB: PHOTOS
+// ─────────────────────────────────────────────────────
+function renderPhotosTab(r){
+  let h=`<div class="div-row"><div class="div-lbl">All Photos (${r.photos.length})</div><div class="div-line"></div></div>`;
+
+  if(r.photos.length){
+    h+=`<div class="photo-grid">`;
+    r.photos.forEach(p=>{
+      if(p.src){
+        h+=`<div class="photo-card" onclick="openLightbox('${p.src}')">
+          <img src="${p.src}"/>
+          <div class="photo-tag">${p.tag}</div>
+          <div class="photo-cap" style="position:relative;z-index:1;background:rgba(245,240,232,0.85)">${p.cap}</div>
+          <button class="photo-del-btn" onclick="deletePhoto(event,'${r.id}','${p.id}')">✕</button>
+        </div>`;
+      }else{
+        h+=`<div class="photo-card">
+          <div class="pe">${p.e}</div>
+          <div class="photo-cap">${p.cap}</div>
+          <div class="photo-tag">${p.tag}</div>
+          ${p.driveUrl?`<a class="c-link" href="${p.driveUrl}" target="_blank" style="position:absolute;bottom:4px;left:4px;font-size:7px">↗ Drive</a>`:''}
+          <button class="photo-del-btn" onclick="deletePhoto(event,'${r.id}','${p.id}')">✕</button>
+        </div>`;
+      }
+    });
+    h+=`</div>`;
+  }else{h+=`<div class="empty">No photos recorded yet</div>`}
+
+  h+=`<div class="div-row" style="margin-top:14px"><div class="div-lbl">Upload Photos</div><div class="div-line"></div></div>
+  <label class="upload-zone" id="inlineUploadZone">
+    <input type="file" id="inlineFileInput" multiple accept="image/*" onchange="handleInlinePhotos(event,'${r.id}')"/>
+    <div class="upload-icon">📎</div>
+    <div class="upload-text">Tap or drag photos from device</div>
+  </label>
+  <div class="preview-strip" id="inlinePreviewStrip"></div>
+  <div class="field"><label>Caption</label><input id="il-cap" placeholder="Describe what you see..."/></div>
+  <div class="field"><label>Tag</label>
+    <select id="il-tag"><option>Encroachment</option><option>Damage</option><option>Obstruction</option><option>Missing Infra</option><option>Hazard</option><option>Drainage</option><option>Accessibility</option><option>Good Condition</option><option>Infrastructure</option></select>
+  </div>
+  <div class="btn-row" id="inlineSaveRow" style="display:none">
+    <button class="btn btn-amber" onclick="saveInlinePhotos('${r.id}')">＋ Save Photos</button>
+    <button class="btn btn-ghost" onclick="clearInlineUploads()">Clear</button>
+  </div>
+  <div class="div-row" style="margin-top:10px"><div class="div-lbl">Or add a Drive link</div><div class="div-line"></div></div>
+  <div class="field"><label>Drive URL</label><input id="il-drive-url" placeholder="https://drive.google.com/..."/></div>
+  <div class="field"><label>Caption</label><input id="il-drive-cap" placeholder="Album or photo name"/></div>
+  <div class="btn-row"><button class="btn btn-ink" onclick="addDrivePhoto('${r.id}')">＋ Add Drive Link</button></div>`;
+
+  document.getElementById('pb').innerHTML=h;
+  _inlinePending=[];
+
+  document.getElementById('inlineUploadZone').addEventListener('click',e=>{
+    if(e.target.tagName!=='INPUT')document.getElementById('inlineFileInput').click();
+  });
+  document.getElementById('inlineUploadZone').addEventListener('dragover',e=>{e.preventDefault();e.currentTarget.classList.add('drag')});
+  document.getElementById('inlineUploadZone').addEventListener('dragleave',e=>e.currentTarget.classList.remove('drag'));
+  document.getElementById('inlineUploadZone').addEventListener('drop',e=>{
+    e.preventDefault();e.currentTarget.classList.remove('drag');
+    handleInlinePhotos({target:{files:e.dataTransfer.files}},r.id);
+  });
+}
+
+function deletePhoto(e,roadId,photoId){
+  e.stopPropagation();
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  r.photos=r.photos.filter(p=>p.id!==photoId);
+  saveState();toast('Photo removed');
+  renderPhotosTab(r);
+}
+
+function handleInlinePhotos(e,roadId){
+  Array.from(e.target.files||[]).forEach(f=>{
+    if(!f.type.startsWith('image/'))return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      _inlinePending.push({file:f,dataUrl:ev.target.result});
+      const strip=document.getElementById('inlinePreviewStrip');
+      if(strip)strip.innerHTML=_inlinePending.map(p=>`<img class="preview-thumb" src="${p.dataUrl}" onclick="openLightbox('${p.dataUrl}')"/>`).join('');
+      const row=document.getElementById('inlineSaveRow');
+      if(row)row.style.display='flex';
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function saveInlinePhotos(roadId){
+  if(!_inlinePending.length)return;
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  const cap=document.getElementById('il-cap')?.value||'Field photo';
+  const tag=document.getElementById('il-tag')?.value||'Field Photo';
+  _inlinePending.forEach(p=>{r.photos.push({id:'ph_'+Date.now()+'_'+Math.random().toString(36).slice(2),type:'image',e:'📷',cap,tag,src:p.dataUrl,driveUrl:''})});
+  const count=_inlinePending.length;_inlinePending=[];
+  saveState();toast(`${count} photo${count>1?'s':''} saved`);
+  renderPhotosTab(r);
+}
+
+function clearInlineUploads(){
+  _inlinePending=[];
+  const s=document.getElementById('inlinePreviewStrip');if(s)s.innerHTML='';
+  const r=document.getElementById('inlineSaveRow');if(r)r.style.display='none';
+}
+
+function addDrivePhoto(roadId){
+  const url=document.getElementById('il-drive-url')?.value.trim();
+  const cap=document.getElementById('il-drive-cap')?.value.trim()||'Drive photo';
+  if(!url){toast('Please enter a Drive URL');return}
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  r.photos.push({id:'ph_'+Date.now(),type:'emoji',e:'🖼',cap,tag:'Drive Link',src:null,driveUrl:url});
+  saveState();toast('Drive photo link added');renderPhotosTab(r);
+}
+
+// ─────────────────────────────────────────────────────
+// TAB: COMPLAINTS
+// ─────────────────────────────────────────────────────
+function renderComplaintsTab(r){
+  let h=`<div class="div-row"><div class="div-lbl">All Complaints (${r.complaints.length})</div><div class="div-line"></div></div>`;
+
+  if(r.complaints.length){
+    r.complaints.forEach(c=>{
+      const slbl={open:"Open",prog:"In Progress",done:"Resolved"}[c.status];
+      h+=`<div class="complaint ${c.status}">
+        <div class="c-head">
+          <span class="c-id">${c.id}</span>
+          <select style="font-family:'DM Mono',monospace;font-size:8px;border:none;background:transparent;cursor:pointer" onchange="updateComplaintStatus('${r.id}','${c.id}',this.value)">
+            <option value="open" ${c.status==='open'?'selected':''}>Open</option>
+            <option value="prog" ${c.status==='prog'?'selected':''}>In Progress</option>
+            <option value="done" ${c.status==='done'?'selected':''}>Resolved</option>
+          </select>
+        </div>
+        <div class="c-title">${c.title}</div>
+        <div class="c-meta">${c.date} · ${c.dept}</div>
+        ${c.link?`<a class="c-link" href="${c.link}" target="_blank">↗ View on portal</a>`:''}
+        <div class="c-actions">
+          <button class="btn btn-red" style="padding:3px 8px;font-size:8px" onclick="deleteComplaint('${r.id}','${c.id}')">✕ Remove</button>
+        </div>
+      </div>`;
+    });
+    h+=`<a class="tracker-btn" href="https://bbmpsahaaya.karnataka.gov.in/" target="_blank">Open BBMP Complaint Tracker →</a>`;
+  }else{h+=`<div class="empty">No complaints filed for this road</div>`}
+
+  h+=`<div class="div-row" style="margin-top:14px"><div class="div-lbl">Log New Complaint</div><div class="div-line"></div></div>
+  <div class="field"><label>Issue *</label><textarea id="qc-title" placeholder="Describe the footpath issue..."></textarea></div>
+  <div class="field-row">
+    <div class="field"><label>Department</label>
+      <select id="qc-dept"><option>BBMP Roads</option><option>BBMP Ward Office</option><option>BBMP Drainage</option><option>BBMP Buildings</option><option>BBMP Horticulture</option><option>Traffic Police</option><option>BWSSB</option><option>Other</option></select>
+    </div>
+    <div class="field"><label>Status</label>
+      <select id="qc-status"><option value="open">Open</option><option value="prog">In Progress</option><option value="done">Resolved</option></select>
+    </div>
+  </div>
+  <div class="field"><label>Complaint Link (optional)</label><input id="qc-link" placeholder="https://bbmpsahaaya.karnataka.gov.in/..."/></div>
+  <div class="btn-row"><button class="btn btn-ink" onclick="quickAddComplaint('${r.id}')">＋ Add Complaint</button></div>`;
+
+  document.getElementById('pb').innerHTML=h;
+}
+
+function quickAddComplaint(roadId){
+  const title=document.getElementById('qc-title')?.value.trim();
+  if(!title){toast('Please describe the issue');return}
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  const today=new Date(),months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  r.complaints.push({
+    id:'BMP-'+today.getFullYear()+'-'+Math.floor(Math.random()*9000+1000),
+    title,status:document.getElementById('qc-status')?.value||'open',
+    date:`${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`,
+    dept:document.getElementById('qc-dept')?.value||'BBMP Roads',
+    link:document.getElementById('qc-link')?.value.trim()||''
+  });
+  saveState();updateStats();toast('Complaint added');renderComplaintsTab(r);
+}
+
+function updateComplaintStatus(roadId,complaintId,newStatus){
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  const c=r.complaints.find(x=>x.id===complaintId);
+  if(c){c.status=newStatus;saveState();toast('Status updated')}
+}
+
+function deleteComplaint(roadId,complaintId){
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  const c=r.complaints.find(x=>x.id===complaintId);if(!c)return;
+  confirm2('Remove complaint?',`"${c.title}"`,()=>{
+    r.complaints=r.complaints.filter(x=>x.id!==complaintId);
+    saveState();updateStats();toast('Complaint removed');renderComplaintsTab(r);
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// TAB: DRIVE LINKS
+// ─────────────────────────────────────────────────────
+function renderLinksTab(r){
+  const icons={form:'📋',photos:'🖼',sheet:'📊',doc:'📄',file:'📁'};
+  let h=`<div class="div-row"><div class="div-lbl">Drive & Form Links (${r.driveLinks.length})</div><div class="div-line"></div></div>`;
+
+  if(r.driveLinks.length){
+    r.driveLinks.forEach(dl=>{
+      h+=`<div class="drive-item">
+        <div class="drive-item-icon">${icons[dl.type]||'📁'}</div>
+        <div class="drive-item-info"><div class="drive-item-name">${dl.name}</div><div class="drive-item-meta">${dl.type}</div></div>
+        <a class="drive-item-open" href="${dl.url}" target="_blank">↗ Open</a>
+        <button class="drive-del" onclick="deleteDriveLink('${r.id}','${dl.id}')">✕</button>
+      </div>`;
+    });
+  }else{h+=`<div class="empty">No links added yet</div>`}
+
+  h+=`<div class="div-row" style="margin-top:14px"><div class="div-lbl">Add Link</div><div class="div-line"></div></div>
+  <div class="field"><label>Name *</label><input id="ql-name" placeholder="e.g. Audit Form Responses, Photo Album..."/></div>
+  <div class="field"><label>URL *</label><input id="ql-url" placeholder="https://drive.google.com/..."/></div>
+  <div class="field"><label>Type</label>
+    <select id="ql-type">
+      <option value="form">📋 Google Form Response</option>
+      <option value="photos">🖼 Photo Album / Folder</option>
+      <option value="sheet">📊 Google Sheet</option>
+      <option value="doc">📄 Google Doc</option>
+      <option value="file">📁 File / Other</option>
+    </select>
+  </div>
+  <div class="btn-row"><button class="btn btn-ink" onclick="quickAddLink('${r.id}')">＋ Add Link</button></div>`;
+
+  document.getElementById('pb').innerHTML=h;
+}
+
+function quickAddLink(roadId){
+  const name=document.getElementById('ql-name')?.value.trim();
+  const url=document.getElementById('ql-url')?.value.trim();
+  if(!name||!url){toast('Please enter name and URL');return}
+  if(!url.startsWith('http')){toast('URL must start with http');return}
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  r.driveLinks.push({id:'dl_'+Date.now(),name,url,type:document.getElementById('ql-type')?.value||'file'});
+  saveState();toast('Link added');renderLinksTab(r);
+}
+
+function deleteDriveLink(roadId,linkId){
+  const r=ROADS.find(x=>x.id===roadId);if(!r)return;
+  r.driveLinks=r.driveLinks.filter(x=>x.id!==linkId);
+  saveState();renderLinksTab(r);
+}
+
+// ─────────────────────────────────────────────────────
+// LIST
+// ─────────────────────────────────────────────────────
+function renderList(){
+  manageMode=false;currentRoadId=null;
+  document.getElementById('manageBtn').classList.remove('active');
+  document.getElementById('manageBtn').textContent='⊕ Add Data';
+  document.getElementById('panelTabs').style.display='none';
+  document.getElementById('pe').textContent='Field Report';
+  document.getElementById('pt').textContent='Street Index';
+  document.getElementById('ps').textContent='Koramangala 3rd – 7th Block';
+
+  const audited=ROADS.filter(r=>r.status==='audited').length;
+  const pct=Math.round((audited/ROADS.length)*100);
+
+  let h=`<div class="prog-wrap">
+    <div class="prog-top"><span>Audit Coverage</span><span class="prog-pct">${pct}%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="pf" style="width:0%"></div></div>
+  </div>`;
+
+  const ord={audited:0,partial:1,pending:2};
+  [...ROADS].sort((a,b)=>ord[a.status]-ord[b.status]).forEach(r=>{
+    const dc={audited:"#2d6a2d",partial:"#b8620a",pending:"#b0a090"}[r.status];
+    const sc={audited:"#2d6a2d",partial:"#b8620a",pending:"#8a7d70"}[r.status];
+    const sl={audited:"Audited",partial:"Partial",pending:"Pending"}[r.status];
+    h+=`<div class="sitem" onclick="openRoad(ROADS.find(x=>x.id==='${r.id}'))">
+      <div class="sitem-dot" style="background:${dc}"></div>
+      <div style="flex:1">
+        <div class="sitem-name">${r.name}</div>
+        <div class="sitem-meta">${r.block}${r.length?' · '+r.length:''}</div>
+      </div>
+      <div class="sitem-r">
+        <div class="sitem-status" style="color:${sc}">${sl}</div>
+        ${r.complaints.length?`<div class="sitem-meta" style="margin-top:2px">${r.complaints.length} complaint${r.complaints.length>1?'s':''}</div>`:''}
+        ${r.driveLinks&&r.driveLinks.length?`<div class="sitem-meta" style="margin-top:2px;color:var(--amber)">${r.driveLinks.length} link${r.driveLinks.length>1?'s':''}</div>`:''}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('pb').innerHTML=h;
+  setTimeout(()=>{const el=document.getElementById('pf');if(el)el.style.width=pct+'%'},80);
+}
+
+// ─────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────
+function openLightbox(src){if(!src)return;document.getElementById('lbImg').src=src;document.getElementById('lightbox').classList.add('open')}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');document.getElementById('lbImg').src=''}
+
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+let _modalCb=null;
+function confirm2(title,body,cb){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').textContent=body;
+  document.getElementById('modalConfirm').onclick=()=>{closeModal();cb()};
+  document.getElementById('modalOverlay').classList.add('open');
+  _modalCb=cb;
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');_modalCb=null}
+
+// ─────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────
+updateStats();
+renderList();
+setTimeout(()=>map.invalidateSize(),150);
+</script>
+</body>
+</html>
